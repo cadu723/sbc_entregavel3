@@ -1,18 +1,44 @@
-Mini-Projeto 3 — Ontologia de Triagem Médica e Doenças (RDF, RDFS, OWL e SPARQL)
-Este repositório contém uma Base de Conhecimento modelada com Grafos de Conhecimento (Semantic Web) focada no domínio médico clínico. O sistema simula um motor de inferência e triagem diagnóstica (inspirado no modelo MYCIN), capaz de cruzar sintomas, doenças, agentes patogênicos, tratamentos e pacientes.
-O projeto foi desenvolvido em Python utilizando as bibliotecas rdflib e owlrl, implementando consultas programáticas e declarativas (SPARQL).
-1. O Poder da Inferência (Reasoner OWL-RL)
-O grande diferencial desta ontologia é a sua capacidade de deduzir novos conhecimentos clínicos automaticamente a partir das regras semânticas criadas. Ao executar o script, o motor de inferência analisa a base e expande o grafo significativamente:
- * Fatos iniciais (Antes da Inferência): 215 triplas explícitas (carregadas diretamente do arquivo .ttl escrito manualmente).
- * Fatos inferidos automaticamente: 417 novas triplas (deduzidas por regras de transitividade, simetria, inversão e hierarquia de classes).
- * Tamanho total do Grafo Clínico: 632 triplas totais disponíveis para cruzamento de dados e consultas SPARQL após o fechamento dedutivo.
-2. Arquivos do Projeto
- * ontologia_doencas.ttl: Arquivo contendo a base de conhecimento no formato Turtle (T-Box com as regras/esquema e A-Box com os fatos/instâncias).
- * consultas_doencas.py: Script Python principal que carrega a base, aplica o reasoner (inferência lógica) e executa 15 consultas e atualizações no grafo.
- * README.md: Este arquivo de documentação.
-3. Estrutura da Ontologia (T-Box)
-A ontologia possui uma taxonomia detalhada organizada em múltiplos níveis hierárquicos utilizando rdfs:subClassOf.
-Taxonomia de Classes
+# Mini-Projeto 3 — Ontologia de Triagem Médica e Doenças (RDF, RDFS, OWL e SPARQL)
+
+Este repositório contém uma base de conhecimento modelada como grafo de conhecimento (Web Semântica) no domínio médico clínico. O sistema simula um motor de inferência e triagem diagnóstica, inspirado no MYCIN, capaz de cruzar sintomas, doenças, agentes patogênicos, tratamentos e pacientes.
+
+O projeto foi desenvolvido em Python com as bibliotecas `rdflib` e `owlrl`, e implementa consultas programáticas (`g.triples()`), consultas e atualizações declarativas (SPARQL) e uma verificação das construções OWL utilizadas.
+
+> Os valores clínicos da base (letalidade, dosagem, incubação) são ilustrativos, para fins acadêmicos, e não substituem fontes médicas.
+
+---
+
+## 1. Resumo da base e inferência (reasoner OWL-RL)
+
+A base (`ontologia_doencas.ttl`) modela doenças, sintomas, agentes patogênicos, tratamentos, médicos e pacientes. Ao carregar o arquivo e aplicar o reasoner `DeductiveClosure(OWLRL_Semantics)`, o script imprime as seguintes métricas:
+
+| Métrica | Valor |
+|---|---|
+| Triplas explícitas (carregadas do `.ttl`) | **325** |
+| Triplas inferidas pelo reasoner | **692** |
+| Total após o fechamento dedutivo | **1017** |
+| Inconsistências detectadas na base | **0** |
+| Classes | **16** |
+| Propriedades | **16** (9 de objeto e 7 de dados) |
+| Instâncias (A-Box) | **40** |
+
+As 692 triplas inferidas incluem inferências do domínio (inversas, transitividade, simetria, equivalência de classes, herança de classes, domain e range) e também axiomas padrão do fechamento OWL-RL, como `rdf:type owl:Thing`, `rdfs:Resource` e `owl:sameAs` reflexivo.
+
+---
+
+## 2. Arquivos do projeto
+
+- `ontologia_doencas.ttl`: base de conhecimento em Turtle, com a T-Box (esquema e regras) e a A-Box (instâncias).
+- `consultas_doencas.py`: script principal. Carrega a base, aplica o reasoner e executa 17 consultas e atualizações (8 com `g.triples()` e 9 com SPARQL), seguidas de 3 verificações das construções OWL.
+- `README.md`: este arquivo.
+
+---
+
+## 3. Estrutura da ontologia (T-Box)
+
+A taxonomia tem 16 classes, organizadas por `rdfs:subClassOf` em duas árvores, com até 3 níveis abaixo da raiz `:EntidadeSaude`.
+
+```text
 :EntidadeSaude
  ├── :Doenca
  │    ├── :DoencaInfecciosa
@@ -30,53 +56,105 @@ Taxonomia de Classes
  ├── :Paciente
  │    └── :PacienteTriagemCritica
  └── :Medico
+```
 
-Propriedades e Restrições Lógicas (Construtores OWL)
-O projeto utiliza semântica formal OWL para permitir que o reasoner gere as 417 triplas inferidas:
- * Propriedades Inversas (owl:inverseOf):
-   * :apresentaSintoma \leftrightarrow :sintomaDe
-   * :tratadaCom \leftrightarrow :indicadoPara
- * Propriedade Transitiva (owl:TransitiveProperty):
-   * :evoluiPara (Ex: Dengue Clássica \rightarrow Dengue com Alarme \rightarrow Dengue Grave).
- * Propriedade Simétrica (owl:SymmetricProperty):
-   * :interageCom (Interações medicamentosas bidirecionais entre 2 ou mais remédios).
- * Propriedades Funcionais (owl:FunctionalProperty):
-   * :codigoCID e :idadePaciente (Garantem que um paciente tenha apenas uma idade e uma doença apenas um CID principal).
- * Disjunção de Classes (owl:disjointWith):
-   * Impede que instâncias sejam classificadas erroneamente de forma simultânea (ex: :DoencaViral e :DoencaBacteriana são disjuntas).
- * Equivalência de Classes (owl:equivalentClass):
-   * Unifica o vocabulário, tratando :Sintoma e :ManifestacaoClinica como sinônimos exatos.
-4. Base de Dados (A-Box)
-A base possui 35 instâncias concretas pré-cadastradas:
- * 6 Agentes Patogênicos: Vírus da Dengue, H1N1, SARS-CoV-2, Bacilo de Koch, Meningococo, Pneumococo.
- * 10 Doenças Diferentes: Classificadas entre Virais (COVID-19, Dengues, Influenza), Bacterianas (Tuberculose, Pneumonia, Meningite) e Crônicas (Hipertensão, Asma).
- * 7 Sintomas Clínicos: Febre Alta, Cefaleia, Mialgia, Dispneia, Tosse Seca, Hemorragia, Rigidez na Nuca.
- * 10 Tratamentos: Medicamentos (Paracetamol, Dipirona, Oseltamivir, Antibióticos) e Terapias de Suporte (Oxigenoterapia, Hidratação).
- * 6 Pessoas: 2 Médicos e 4 Pacientes com diferentes idades e quadros clínicos.
-5. Consultas e Operações Implementadas
-O arquivo consultas_doencas.py varre as 632 triplas totais em dois blocos de execução:
-Parte 1: Navegação de Grafo (g.triples - 6 operações)
- * Busca por sujeito fixo (Sintomas da Dengue Clássica).
- * Busca por objeto fixo (Doenças que causam Dispneia).
- * Busca explorando inferência owl:inverseOf (Doenças derivadas a partir de um sintoma).
- * Busca explorando inferência owl:TransitiveProperty (Cadeias completas de evolução clínica).
- * Inspeção completa de atributos de uma entidade (Rifampicina), incluindo inferências de simetria.
- * Busca baseada na taxonomia rdfs:subClassOf (Recuperando todas as doenças, independente do nível hierárquico).
-Parte 2: Consultas Declarativas e Atualizações (SPARQL - 9 operações)
- * SELECT + FILTER + ORDER BY: Lista doenças com letalidade superior a 2.0% em ordem decrescente.
- * SELECT + Agregação (Estilo MYCIN): Ranquear hipóteses diagnósticas contando a ocorrência simultânea de 3 sintomas informados no VALUES.
- * SELECT + OPTIONAL + BIND: Exibe doenças e seus agentes patogênicos (se existirem), calculando o nível de risco dinamicamente via IF.
- * SELECT + Múltiplos Joins: Gera um prontuário médico completo cruzando Paciente, Médico, Doença e Tratamentos (GROUP_CONCAT).
- * ASK: Verificação booleana de segurança para interação medicamentosa entre Ibuprofeno e Losartana.
- * CONSTRUCT: Deriva um grafo totalmente novo ligando o Paciente diretamente ao Tratamento (:prescricaoSugerida).
- * UPDATE (INSERT...WHERE): Regra de produção que classifica automaticamente pacientes com doenças muito letais na classe :PacienteTriagemCritica.
- * UPDATE (DELETE DATA): Simula a revisão de um protocolo clínico, removendo 2 triplas (a indicação principal e a inversa inferida) de Paracetamol para a Dengue Clássica.
- * UPDATE (DELETE...INSERT...WHERE): Transição de estado clínico, atualizando o :statusClinico de pacientes que estavam "Em Triagem" para "Em Tratamento Supervisionado".
-6. Como Executar
-Pré-requisitos:
-Certifique-se de ter o Python 3 instalado e instale as bibliotecas necessárias:
+### Propriedades
+
+- **9 propriedades de objeto:** `:apresentaSintoma`, `:sintomaDe`, `:tratadaCom`, `:indicadoPara`, `:causadaPor`, `:evoluiPara`, `:interageCom`, `:diagnosticadoCom`, `:atendidoPor`.
+- **7 propriedades de dados:** `:codigoCID`, `:taxaLetalidade`, `:periodoIncubacaoDias`, `:gravidadeSintoma`, `:dosagemMg`, `:idadePaciente`, `:statusClinico`.
+
+Todas têm `rdfs:domain` e `rdfs:range` declarados.
+
+### Construtores OWL utilizados
+
+1. **Propriedades inversas (`owl:inverseOf`):** `:apresentaSintoma` ↔ `:sintomaDe` e `:tratadaCom` ↔ `:indicadoPara`. Declaramos só um sentido, e o reasoner materializa o outro (consultas 1.3 e 1.5 e atualização 2.8).
+2. **Propriedade transitiva (`owl:TransitiveProperty`):** `:evoluiPara` (Dengue Clássica → Dengue com Sinais de Alarme → Dengue Grave). O reasoner deduz que a Dengue Clássica também evolui para a Dengue Grave (consulta 1.4).
+3. **Propriedade simétrica (`owl:SymmetricProperty`):** `:interageCom`. Declaramos `:losartana :interageCom :ibuprofeno`, e o reasoner infere o sentido oposto; o ASK 2.5 consulta justamente o sentido não declarado.
+4. **Equivalência de classes (`owl:equivalentClass`):** `:Sintoma` ≡ `:ManifestacaoClinica`. `:mialgia` e `:anosmia` são declaradas apenas como `:ManifestacaoClinica`; o reasoner as classifica também como `:Sintoma` (consulta 1.7 e verificação 3.3). A `:anosmia` não é ligada a nenhuma doença, então a equivalência é a única causa dessa classificação.
+5. **Propriedades funcionais (`owl:FunctionalProperty`):** `:causadaPor` (cada doença infecciosa tem um agente patogênico primário), `:codigoCID` (um código por doença) e `:idadePaciente` (uma idade por paciente). Para a propriedade de objeto `:causadaPor`, ligar duas URIs de agentes à mesma doença faz o reasoner inferir que são o mesmo indivíduo (`owl:sameAs`), como mostra a verificação 3.1. Nas propriedades de dados, a unicidade é uma declaração de modelagem: o reasoner OWL-RL não sinaliza erro quando valores literais distintos são atribuídos, então ela deve ser garantida na entrada dos dados.
+6. **Disjunção de classes (`owl:disjointWith`):** entre `:DoencaViral` e `:DoencaBacteriana`, `:DoencaInfecciosa` e `:DoencaCronica`, `:Medicamento` e `:TerapiaSuporte`, e entre `:Doenca` e `:Tratamento`/`:Sintoma`. Um indivíduo classificado em duas classes disjuntas é sinalizado como inconsistente (verificação 3.2).
+
+> Em OWL, `FunctionalProperty` e `disjointWith` não impedem a inserção de dados, como uma restrição de banco relacional faria (isso seria papel do SHACL). Eles fazem o reasoner **inferir** ou **detectar** consequências lógicas.
+
+---
+
+## 4. Base de dados (A-Box — 40 instâncias)
+
+- **6 agentes patogênicos:** vírus da Dengue, Influenza A (H1N1), SARS-CoV-2, bacilo de Koch, meningococo e pneumococo.
+- **10 doenças:**
+  - 5 virais: Dengue Clássica, Dengue com Sinais de Alarme, Dengue Grave, Influenza A e COVID-19.
+  - 3 bacterianas: Tuberculose, Pneumonia Bacteriana e Meningite Meningocócica.
+  - 2 crônicas: Hipertensão e Asma Grave.
+- **8 sintomas e manifestações clínicas:** Febre Alta, Cefaleia, Mialgia, Anosmia, Dispneia, Tosse Seca, Hemorragia e Rigidez na Nuca.
+- **10 tratamentos:**
+  - 8 medicamentos: Paracetamol, Dipirona, Oseltamivir, Amoxicilina, Rifampicina, Ceftriaxona, Losartana e Ibuprofeno.
+  - 2 terapias de suporte: Hidratação Venosa e Oxigenoterapia.
+- **6 pessoas:** 2 médicos e 4 pacientes, com idades e quadros clínicos diferentes.
+
+Observação sobre o CID: a Dengue Clássica e a Dengue com Sinais de Alarme usam `A90` (no SUS, `A91` é reservado à forma hemorrágica/grave, usada na Dengue Grave).
+
+---
+
+## 5. Consultas e operações implementadas
+
+O script `consultas_doencas.py` executa as consultas sobre o grafo expandido pelo reasoner. Cada consulta imprime seu número, seu propósito e, na Parte 1, o resultado esperado. A saída é ordenada, portanto idêntica a cada execução.
+
+### Parte 1: navegação com `g.triples()` (8 consultas)
+
+1. **`(sujeito, predicado, None)`:** sintomas da Dengue Clássica.
+2. **`(None, predicado, objeto)`:** doenças que apresentam Dispneia.
+3. **`(sujeito, predicado inferido, None)`:** de quais doenças a Febre Alta é sintoma, usando `:sintomaDe` (inferido via `owl:inverseOf`).
+4. **`(None, predicado transitivo, None)`:** cadeias de evolução clínica com `:evoluiPara` (inclui o salto inferido por transitividade).
+5. **`(sujeito, None, None)`:** todas as afirmações sobre a Rifampicina, incluindo a interação simétrica e a indicação inversa.
+6. **`(None, rdf:type, :Doenca)`:** todas as doenças, independentemente do nível da hierarquia (inferência por `rdfs:subClassOf`).
+7. **`(None, rdf:type, :Sintoma)`:** os 8 sintomas, incluindo Mialgia e Anosmia, que só são `:Sintoma` por `owl:equivalentClass`.
+8. **`(None, None, objeto)`:** tudo que aponta para o Vírus da Dengue e por qual propriedade.
+
+### Parte 2: consultas e atualizações SPARQL (9 operações)
+
+1. **`SELECT` + `FILTER` + `ORDER BY`:** doenças com letalidade acima de 2,0%, da mais letal para a menos letal.
+2. **`SELECT` + `VALUES` + `COUNT` + `GROUP BY` + `HAVING` (triagem estilo MYCIN):** dado um paciente com Febre Alta, Cefaleia e Mialgia, ranqueia as doenças pelo número de sintomas compatíveis, depois pela cobertura do quadro da doença e, em empate, pela maior letalidade.
+3. **`SELECT` + `OPTIONAL` + `BIND`:** lista doenças e seus agentes patogênicos (opcionais, já que doenças crônicas não têm) e calcula o nível de risco com `IF`.
+4. **`SELECT` com múltiplos joins e `GROUP_CONCAT`:** prontuário integrado com paciente, idade, doença, médico e tratamentos.
+5. **`ASK`:** verifica se existe interação medicamentosa entre Ibuprofeno e Losartana.
+6. **`CONSTRUCT`:** deriva um novo grafo ligando cada paciente diretamente aos tratamentos da sua doença (`:prescricaoSugerida`).
+7. **`UPDATE` (`INSERT...WHERE`):** classifica como `:PacienteTriagemCritica` os pacientes com doença de letalidade ≥ 5,0% (mostra antes e depois).
+8. **`UPDATE` (`DELETE DATA`):** revisão de protocolo clínico, removendo a indicação do Paracetamol para a Dengue Clássica. Remove 2 triplas: a original e a inversa já materializada pelo reasoner (mostra antes e depois).
+9. **`UPDATE` (`DELETE...INSERT...WHERE`):** transição de estado, mudando o `:statusClinico` de "Em Triagem" para "Em Tratamento Supervisionado" nos pacientes que já têm médico atribuído (mostra antes e depois).
+
+### Parte 3: verificação das construções OWL (3 testes)
+
+Cada teste usa uma cópia nova do `.ttl` com uma tripla extra, sem alterar o grafo principal:
+
+1. **`owl:FunctionalProperty`:** liga a Dengue Clássica a um segundo agente em `:causadaPor`; o reasoner infere `owl:sameAs` entre os dois (esperado: `True`).
+2. **`owl:disjointWith`:** classifica um indivíduo como `:DoencaViral` e `:DoencaBacteriana` ao mesmo tempo (esperado: 0 inconsistências na base original e 1 ou mais no grafo de teste).
+3. **`owl:equivalentClass`:** confirma que `:anosmia` virou `:Sintoma` sem passar por `:apresentaSintoma` (esperado: `True` e `True`).
+
+---
+
+## 6. Como executar
+
+### Pré-requisitos
+
+É necessário ter o Python 3 instalado. Instale as bibliotecas:
+
+```bash
 pip install rdflib owlrl
+```
 
-Execução:
-No terminal, navegue até a pasta onde os arquivos estão salvos e execute o script:
+### Execução
+
+Com `ontologia_doencas.ttl` e `consultas_doencas.py` na mesma pasta, execute:
+
+```bash
 python consultas_doencas.py
+```
+
+As primeiras linhas da saída devem ser:
+
+```text
+Total de triplas explícitas carregadas do arquivo .ttl: 325
+Total de triplas após fechamento dedutivo (OWLRL_Semantics): 1017
+Novas triplas inferidas automaticamente pelo Reasoner: 692
+Inconsistências lógicas detectadas pelo Reasoner na base: 0
+```
